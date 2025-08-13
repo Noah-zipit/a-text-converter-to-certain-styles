@@ -1,19 +1,34 @@
 import { json } from '@sveltejs/kit';
-import { transformConversation } from '$lib/api/gemini';
+import { transformPhrase } from '$lib/api/gemini';
 
 export async function POST({ request }) {
+  console.log('API endpoint called');
+  
   try {
-    const { conversation, style } = await request.json();
+    const body = await request.json();
+    console.log('Request body received:', body);
     
-    if (!conversation || !style) {
-      return json({ error: 'Conversation and style are required' }, { status: 400 });
+    const { phrase, style } = body;
+    
+    if (!phrase || !style) {
+      console.log('Missing required fields');
+      return json({ error: 'Phrase and style are required' }, { status: 400 });
     }
     
-    const transformedText = await transformConversation(conversation, style);
+    console.log(`Processing transformation: style=${style}, phrase="${phrase}"`);
     
-    return json({ transformedText });
-  } catch (error) {
-    console.error('API Error:', error);
-    return json({ error: 'Failed to transform conversation' }, { status: 500 });
+    try {
+      const transformedText = await transformPhrase(phrase, style);
+      console.log('Transformation successful, returning response');
+      return json({ transformedText });
+    } catch (apiError) {
+      console.error('Gemini API Error:', apiError);
+      return json({ 
+        error: `Error connecting to AI service: ${apiError.message}` 
+      }, { status: 500 });
+    }
+  } catch (parseError) {
+    console.error('Request parsing error:', parseError);
+    return json({ error: 'Failed to parse request' }, { status: 400 });
   }
 }

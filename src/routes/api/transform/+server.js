@@ -6,10 +6,7 @@ export async function POST({ request }) {
     const { conversation, style } = await request.json();
     
     if (!conversation || !style) {
-      return new Response(
-        JSON.stringify({ error: 'Conversation and style are required' }), 
-        { status: 400 }
-      );
+      return json({ error: 'Conversation and style are required' }, { status: 400 });
     }
     
     const transformedText = await transformConversation(conversation, style);
@@ -17,9 +14,6 @@ export async function POST({ request }) {
     return json({ transformedText });
   } catch (error) {
     console.error('API Error:', error);
-    return new Response(
-      JSON.stringify({ error: 'Failed to transform conversation' }), 
-      { status: 500 }
-    );
+    return json({ error: 'Failed to transform conversation' }, { status: 500 });
   }
 }

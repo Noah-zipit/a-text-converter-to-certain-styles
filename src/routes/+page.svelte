@@ -1,45 +1,49 @@
 <script>
   import Header from '$lib/components/Header.svelte';
-  import ConversationInput from '$lib/components/ConversationInput.svelte';
+  import PhraseInput from '$lib/components/PhraseInput.svelte';
   import StyleSelector from '$lib/components/StyleSelector.svelte';
   import TransformedOutput from '$lib/components/TransformedOutput.svelte';
   
-  let conversation = "";
+  let phrase = "";
   let selectedStyle = "shakespeare";
   let transformedText = "";
   let isLoading = false;
-  let error = null;
+  let error = "";
   
-  async function transformConversation() {
-    if (!conversation.trim()) {
-      error = "Please enter a conversation to transform";
+  async function transformPhrase() {
+    if (!phrase.trim()) {
+      error = "Please enter a phrase to transform";
       return;
     }
     
-    error = null;
+    error = "";
     isLoading = true;
+    transformedText = "";
     
     try {
+      console.log('Sending request to transform API');
       const response = await fetch('/api/transform', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          conversation,
+          phrase,
           style: selectedStyle
         })
       });
       
+      const data = await response.json();
+      
       if (!response.ok) {
-        throw new Error('Failed to transform conversation');
+        throw new Error(data.error || 'Failed to transform phrase');
       }
       
-      const data = await response.json();
       transformedText = data.transformedText;
+      console.log('Transformation successful');
     } catch (err) {
+      console.error('Error in transformation:', err);
       error = err.message || 'Something went wrong. Please try again.';
-      console.error('Error:', err);
     } finally {
       isLoading = false;
     }
@@ -49,21 +53,15 @@
 <Header />
 
 <main>
-  <ConversationInput bind:conversation />
+  <PhraseInput bind:phrase />
   
   <StyleSelector bind:selectedStyle />
   
-  {#if error}
-    <div class="error">
-      {error}
-    </div>
-  {/if}
-  
-  <button class="transform-btn" on:click={transformConversation} disabled={isLoading}>
-    {isLoading ? 'Transforming...' : 'Transform Conversation'}
+  <button class="transform-btn" on:click={transformPhrase} disabled={isLoading}>
+    {isLoading ? 'Transforming...' : 'Transform Phrase'}
   </button>
   
-  <TransformedOutput {transformedText} {isLoading} {selectedStyle} />
+  <TransformedOutput {transformedText} {isLoading} {selectedStyle} {error} />
 </main>
 
 <style>
@@ -83,14 +81,5 @@
   .transform-btn:disabled {
     opacity: 0.7;
     cursor: not-allowed;
-  }
-  
-  .error {
-    background-color: #fff0f0;
-    color: #e53935;
-    padding: 1rem;
-    border-radius: 0.5rem;
-    margin-bottom: 1rem;
-    border-left: 4px solid #e53935;
   }
 </style>
